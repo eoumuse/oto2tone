@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f6f1">
+  <meta name="description" content="歌声やピアノの音を、スマホの中で五線譜とMIDIに。">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>oto2score | 音を、譜面に。</title>
+  <style>
+    :root { color-scheme:light; --bg:#f7f6f1; --fg:#172a28; --muted:#687874; --line:#d9dfda; --card:#fffdfa; --green:#175e52; --accent:#c2ed9a; --cream:#f0f3e8; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; background:var(--bg); color:var(--fg); padding-bottom:env(safe-area-inset-bottom); }
+    .shell { max-width:880px; margin:0 auto; padding:24px clamp(16px,4vw,40px) 56px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:26px; }
+    .brand { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:750; letter-spacing:.045em; }
+    .brand-mark { display:grid; place-items:center; width:31px; height:31px; border-radius:10px; background:var(--fg); color:var(--accent); font-size:22px; }
+    .local { font-size:11px; border:1px solid var(--line); padding:6px 10px; border-radius:999px; color:var(--green); background:#f2f6ed; white-space:nowrap; }
+    .eyebrow { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--green); }
+    h1 { font-size:clamp(34px,8vw,64px); line-height:1.16; margin:14px 0 18px; letter-spacing:-.085em; font-weight:780; }
+    .sub { color:var(--muted); font-size:15px; line-height:1.9; max-width:520px; margin:0 0 29px; }
+    .layout { display:grid; gap:18px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:22px; box-shadow:0 8px 26px #153d2820; }
+    .panel h2 { margin:0 0 19px; font-size:18px; letter-spacing:-.03em; }
+    .step { font-size:10px; font-weight:800; letter-spacing:.16em; color:var(--green); margin-bottom:7px; }
+    .mode-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:19px; }
+    button,select,input { font:inherit; }
+    button { cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .mode { border:1px solid var(--line); border-radius:13px; padding:15px 10px; color:var(--fg); font-weight:700; background:var(--cream); }
+    .mode[aria-pressed="true"] { color:#fff; background:var(--green); border-color:var(--green); }
+    .upload { display:block; width:100%; text-align:center; padding:18px 12px; border:1.5px dashed #9eafa3; background:#f5f7ef; border-radius:14px; font-weight:700; cursor:pointer; }
+    .upload small { display:block; margin-top:5px; color:var(--muted); font-weight:400; }
+    .upload input { position:absolute; width:1px; height:1px; opacity:0; }
+    .demos { display:flex; gap:8px; margin-top:9px; }
+    .demo { flex:1; font-size:12px; font-weight:650; border:1px solid var(--line); border-radius:10px; padding:9px; color:var(--green); background:#fff; }
+    .or { text-align:center; color:var(--muted); font-size:12px; margin:13px 0; }
+    .record { border:1px solid var(--line); width:100%; background:#fff; border-radius:14px; padding:15px; font-size:15px; font-weight:750; color:var(--fg); display:flex; align-items:center; justify-content:center; gap:9px; min-height:54px; }
+    .record:disabled { opacity:.5; cursor:not-allowed; }
+    .dot { border-radius:50%; width:11px; height:11px; background:#d34b4b; }
+    .record.active { color:#b21c36; border-color:#b21c36; background:#fff1f3; }
+    .record.active .dot { animation:pulse 1.1s infinite; }
+    @keyframes pulse { 50% { opacity:.2; } }
+    .selected { margin-top:15px; padding:11px 13px; border-radius:12px; background:#f4f7f1; color:var(--muted); display:none; line-height:1.5; font-size:13px; overflow-wrap:anywhere; }
+    .selected.show { display:block; }
+    audio { display:block; margin-top:8px; width:100%; height:38px; }
+    .hint { color:var(--muted); font-size:12px; line-height:1.75; }
+    .settings { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:19px; }
+    .field label { display:flex; justify-content:space-between; margin-bottom:7px; font-size:12px; font-weight:700; }
+    .field select { width:100%; min-height:45px; color:var(--fg); background:#fff; border:1px solid var(--line); border-radius:11px; padding:8px; }
+    .field input[type=range] { width:100%; accent-color:var(--green); min-height:30px; }
+    .cta { border:0; width:100%; min-height:58px; background:var(--green); color:#fff; border-radius:15px; margin-top:22px; padding:14px; font-size:16px; font-weight:800; box-shadow:0 4px 0 #0b3d33; }
+    .cta:disabled { opacity:.4; box-shadow:none; cursor:not-allowed; }
+    .cta:active:not(:disabled) { transform:translateY(2px); box-shadow:0 2px 0 #0b3d33; }
+    .status { color:var(--muted); font-size:13px; line-height:1.6; margin-top:12px; min-height:20px; }
+    .status.error { color:#b42c40; }
+    progress { width:100%; height:7px; accent-color:var(--green); display:none; margin-top:8px; }
+    progress.show { display:block; }
+    .result { display:none; }
+    .result.show { display:block; }
+    .result-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .count { border-radius:999px; padding:6px 10px; font-size:12px; background:var(--accent); white-space:nowrap; font-weight:800; }
+    .score-scroll { overflow-x:auto; border-radius:14px; border:1px solid var(--line); background:#fff; margin-top:8px; -webkit-overflow-scrolling:touch; }
+    .score-scroll svg { display:block; min-width:640px; width:100%; background:#fff; }
+    .legend { color:var(--muted); font-size:12px; margin-top:10px; line-height:1.7; }
+    .listen-panel { margin-top:17px; padding:16px; background:#f1f6ee; border:1px solid #d2dfd1; border-radius:15px; }
+    .listen-head { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:11px; }
+    .listen-head strong { font-size:15px; }
+    .listen-chip { font-size:10px; color:var(--green); background:#e0efcf; border-radius:999px; padding:5px 9px; font-weight:700; }
+    .instrument-select { width:100%; padding:12px 11px; min-height:48px; border:1px solid #bfd0c0; background:white; color:var(--fg); border-radius:11px; font:inherit; font-weight:700; }
+    .vocal-options { margin-top:13px; padding:13px; border-radius:12px; background:#fffdf9; border:1px solid #d5e2d0; }
+    .vocal-options[hidden] { display:none; }
+    .vocal-options label { display:block; font-size:12px; font-weight:700; margin-bottom:7px; }
+    .vocal-grid { display:grid; grid-template-columns:minmax(0,.46fr) minmax(0,1fr); gap:9px; }
+    .vocal-grid select,.vocal-grid input { min-width:0; width:100%; min-height:45px; padding:10px; border:1px solid #bfd0c0; border-radius:10px; background:#fff; color:var(--fg); }
+    .voice-test { margin-top:10px; background:#e5f0dc; border:1px solid #b7cfae; border-radius:10px; color:#175e52; padding:11px; width:100%; font-weight:750; }
+    .listen-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(100px,.55fr); gap:9px; margin-top:12px; }
+    .play-button,.stop-button { min-height:52px; border-radius:12px; font-size:15px; font-weight:800; }
+    .play-button { background:var(--green); border:0; color:white; }
+    .stop-button { background:white; border:1px solid #aabdb2; color:var(--green); }
+    .play-button:disabled,.stop-button:disabled { opacity:.45; cursor:not-allowed; }
+    .playback-track { display:flex; align-items:center; gap:10px; margin-top:13px; }
+    .playback-track progress { display:block; margin:0; flex:1; width:100%; height:7px; accent-color:var(--green); }
+    .playback-time { white-space:nowrap; min-width:88px; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right; }
+    .sound-note { font-size:11px; line-height:1.7; color:var(--muted); margin:11px 0 0; }
+    .score-scroll [data-pitch] { cursor:pointer; }
+    .score-scroll [data-pitch]:active { fill:#ca8a31; }
+    .downloads { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+    .dl { text-align:center; border:1px solid #9db4a7; color:var(--green); background:#eff5ed; padding:13px 7px; border-radius:12px; font-weight:700; font-size:13px; text-decoration:none; }
+    .dl[aria-disabled=true] { pointer-events:none; opacity:.4; }
+    details { margin-top:20px; border-top:1px solid var(--line); padding-top:15px; }
+    summary { cursor:pointer; font-weight:700; font-size:14px; }
+    .note-list { margin-top:14px; display:grid; gap:9px; max-height:380px; overflow-y:auto; }
+    .note-row { display:grid; grid-template-columns:minmax(56px,1fr) 58px 42px 42px; gap:7px; align-items:center; border:1px solid var(--line); border-radius:11px; padding:9px; }
+    .note-row strong { display:block; font-size:14px; }
+    .note-row small { display:block; color:var(--muted); font-size:11px; white-space:nowrap; }
+    .note-row button { border-radius:8px; border:1px solid var(--line); height:39px; background:#f2f5ed; color:var(--fg); font-weight:800; }
+    .note-row .trash { background:#fff5f5; border-color:#f5d6d6; color:#a22; }
+    .manual { border:1px solid var(--line); background:#fff; width:100%; padding:13px; margin-top:12px; border-radius:12px; font-weight:700; color:var(--green); }
+    .legal { font-size:12px; line-height:1.8; color:var(--muted); margin-top:22px; }
+    footer { text-align:center; color:#7d8b86; font-size:11px; margin-top:30px; }
+    @media (min-width:720px) { .layout { grid-template-columns:1fr 1fr; align-items:start; } .result { grid-column:1/-1; } .shell { padding-top:36px; } }
+    @media (max-width:360px) { .panel { padding:17px; } .note-row { grid-template-columns:minmax(54px,1fr) 44px 34px 34px; gap:4px; padding:7px; } .settings { gap:8px; } }
+    @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none!important; scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="brand"><span class="brand-mark">♩</span> oto2score</div><div class="local">● 端末内で解析</div></header>
+    <div class="eyebrow">SOUND INTO SCORE</div>
+    <h1>音を、<br>譜面に。</h1>
+    <p class="sub">思いついたメロディを歌う。ピアノを弾く。<br>録音を五線譜とMIDIに変える、ポケットの採譜アプリ。</p>
+    <div class="layout">
+      <section class="panel" aria-labelledby="audio-heading">
+        <div class="step">01 / SOURCE</div>
+        <h2 id="audio-heading">音を用意する</h2>
+        <div class="mode-tabs" role="group" aria-label="音の種類">
+          <button class="mode" type="button" id="mode-voice" aria-pressed="true">🎙️ 歌声</button>
+          <button class="mode" type="button" id="mode-piano" aria-pressed="false">🎹 ピアノ</button>
+        </div>
+        <label class="upload" for="file-input">＋ 音声ファイルを選ぶ<small>WAV / M4A / MP3 など、最大60秒</small>
+          <input id="file-input" type="file" accept="audio/*,.wav,.m4a,.mp3">
+        </label>
+        <div class="demos"><button id="demo-voice" class="demo" type="button">▶ 歌声デモ</button><button id="demo-piano" class="demo" type="button">▶ ピアノデモ</button></div>
+        <div class="or">または</div>
+        <button class="record" type="button" id="record-btn"><span class="dot"></span><span id="record-label">マイクで録音する</span></button>
+        <div id="selected" class="selected" aria-live="polite"><span id="selected-title"></span><audio id="audio-player" controls preload="metadata"></audio></div>
+        <p class="hint">録音は最大60秒。周囲が静かな場所で、単独の声・ピアノを録ると認識しやすくなります。マイク使用にはHTTPSが必要です。</p>
+      </section>
+      <section class="panel" aria-labelledby="settings-heading">
+        <div class="step">02 / NOTATION</div>
+        <h2 id="settings-heading">譜面の設定</h2>
+        <div class="settings">
+          <div class="field"><label for="bpm">テンポ <output id="bpm-value">120</output> BPM</label><input id="bpm" type="range" min="40" max="220" value="120" step="1"></div>
+          <div class="field"><label for="sensitivity">検出感度 <output id="sensitivity-value">50</output>%</label><input id="sensitivity" type="range" min="0" max="100" value="50" step="5"></div>
+          <div class="field" style="grid-column:1/-1"><label for="grid">リズムの細かさ</label><select id="grid"><option value="8">8分音符</option><option value="16" selected>16分音符</option><option value="32">32分音符</option></select></div>
+        </div>
+        <button id="analyze-btn" class="cta" type="button" disabled>✦ 採譜する</button>
+        <progress id="progress" value="0" max="100"></progress>
+        <div id="status" class="status" role="status" aria-live="polite">音声を選択するか、マイクで録音してください。</div>
+        <p class="hint">歌声は単旋律向け。ピアノの和音判定は実験的です。正確な楽譜にするには採譜後の確認が必要です。</p>
+      </section>
+      <section class="panel result" id="result" aria-labelledby="result-heading">
+        <div class="step">03 / SCORE</div>
+        <div class="result-header"><h2 id="result-heading">できあがった譜面</h2><span class="count" id="count">0 音符</span></div>
+        <div class="score-scroll" id="score-scroll"><svg id="score-svg" role="img" aria-label="採譜した五線譜のプレビュー" viewBox="0 0 800 235"></svg></div>
+        <div class="legend">プレビューは先頭の約4小節を簡易表示。譜面の音符をタップすると単音を試聴できます。MusicXMLを楽譜ソフトで開くと全体を編集できます。</div>
+        <section class="listen-panel" aria-label="楽譜の試聴">
+          <div class="listen-head"><strong>♫ 譜面を鳴らす</strong><span class="listen-chip">鍵盤3 + 歌声4</span></div>
+          <label class="field" for="instrument" style="display:block;font-size:12px;font-weight:700;margin-bottom:7px">音色</label>
+          <select id="instrument" class="instrument-select">
+            <option value="wurlitzer">Wurlitzer風 · あたたかいエレピ</option>
+            <option value="steinway" selected>Steinway風 · やわらかなグランド</option>
+            <option value="yamaha">Yamaha風 · 明るいグランド</option>
+            <optgroup label="歌声シンセ（非公式のオリジナル音色）">
+              <option value="vocal-clear">透明な高音 · ミクをイメージ</option>
+              <option value="vocal-warm">温かな中音 · ルカをイメージ</option>
+              <option value="vocal-bright">はじける高音 · リンをイメージ</option>
+              <option value="vocal-boy">軽やかな少年声 · レンをイメージ</option>
+            </optgroup>
+          </select>
+          <div class="vocal-options" id="vocal-options" hidden>
+            <div class="vocal-grid">
+              <div><label for="vocal-vowel">基本の母音</label><select id="vocal-vowel"><option value="a" selected>あ</option><option value="i">い</option><option value="u">う</option><option value="e">え</option><option value="o">お</option></select></div>
+              <div><label for="vocal-lyrics">音符ごとの母音（任意）</label><input id="vocal-lyrics" type="text" autocomplete="off" maxlength="120" placeholder="あいうえお / ららら"></div>
+            </div>
+            <p class="sound-note">ひらがな・カタカナ1文字につき1音符（小さい「ゃゅょ」は前の文字に結合）。文字の母音だけを鳴らします。子音・歌詞の発音は未対応です。</p>
+            <button class="voice-test" id="vocal-test" type="button">♫ 5音の歌声サンプルを聴く</button>
+          </div>
+          <div class="listen-controls">
+            <button id="play-score" class="play-button" type="button">▶ 譜面を再生</button>
+            <button id="stop-score" class="stop-button" type="button" disabled>■ 停止</button>
+          </div>
+          <div class="playback-track"><progress id="playback-progress" max="1" value="0" aria-label="再生位置"></progress><span id="playback-time" class="playback-time" aria-live="off">0:00 / 0:00</span></div>
+          <p class="sound-note" id="sound-note">BPMは上の「譜面の設定」で変更できます。鍵盤3音色と歌声4音色は、すべてブラウザ内の独自シンセ音です。公式音源ではありません。</p>
+        </section>
+        <div class="downloads"><a id="download-midi" class="dl" download="oto2score.mid" href="#">↓ MIDI</a><a id="download-xml" class="dl" download="oto2score.musicxml" href="#">↓ MusicXML</a></div>
+        <details><summary>検出された音符を修正する <span id="edit-count"></span></summary><div id="note-list" class="note-list"></div><button class="manual" id="add-note" type="button">＋ 音符を追加</button></details>
+      </section>
+    </div>
+    <div class="legal">このバージョンは試作です。自動採譜は音程、開始時刻、音の長さを誤認識することがあります。歌詞を自然に発音する機能、複数楽器の分離、自動テンポ認識は未対応。歌声再生は母音の合成のみです。音声データはサーバーへ送信せず、スマホのブラウザ内で処理します。</div>
+    <footer>oto2score · mobile edition · 2026 · playback v3 · vocal synth</footer>
+  </main>
+  <script src="./app.js" defer></script>
+</body>
+</html>
