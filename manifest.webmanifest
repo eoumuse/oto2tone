@@ -1,0 +1,19 @@
+{
+  "name": "oto2score | 音を、譜面に。",
+  "short_name": "oto2score",
+  "description": "歌声・ピアノの録音を五線譜とMIDIに変換するアプリ",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f6f1",
+  "theme_color": "#175e52",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
