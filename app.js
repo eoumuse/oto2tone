@@ -65,14 +65,36 @@
     }catch(err){releaseMic();setStatus('マイクを利用できません。Safari/Chromeのマイク許可を確認してください。 '+(err?.message||''),true);}
   }
   $('record-btn').addEventListener('click',recordToggle);
-  for(const mode of ['voice','piano'])$('demo-'+mode).addEventListener('click',async()=>{
+  function makeDemoWav(mode){
+    const sr=22050,length=sr*4,buffer=new Float32Array(length);
+    const phrase=mode==='voice'?[60,62,64,67,69,67,64,62]:[48,52,55,50,53,57,52,55];
+    for(let k=0;k<phrase.length;k++){
+      const notes=mode==='voice'?[phrase[k]]:[phrase[k],phrase[k]+12,phrase[k]+16];
+      const start=Math.floor(sr*(.15+k*.45)),dur=Math.floor(sr*.4);
+      for(const p of notes){
+        const freq=440*Math.pow(2,(p-69)/12);
+        for(let i=0;i<dur && start+i<buffer.length;i++){
+          const t=i/sr,e=mode==='voice'?Math.sin(Math.PI*i/dur):Math.exp(-5*t);
+          const s=Math.sin(2*Math.PI*freq*t)+.28*Math.sin(4*Math.PI*freq*t);
+          buffer[start+i]+=s*e/(notes.length*2.3);
+        }
+      }
+    }
+    const out=new ArrayBuffer(44+buffer.length*2),view=new DataView(out);
+    const word=(at,text)=>{for(let i=0;i<text.length;i++)view.setUint8(at+i,text.charCodeAt(i));};
+    word(0,'RIFF');view.setUint32(4,36+buffer.length*2,true);
+    word(8,'WAVE');word(12,'fmt ');view.setUint32(16,16,true);
+    view.setUint16(20,1,true);view.setUint16(22,1,true);
+    view.setUint32(24,sr,true);view.setUint32(28,sr*2,true);
+    view.setUint16(32,2,true);view.setUint16(34,16,true);
+    word(36,'data');view.setUint32(40,buffer.length*2,true);
+    for(let i=0;i<buffer.length;i++)view.setInt16(44+i*2,Math.round(Math.max(-1,Math.min(1,buffer[i]))*32767),true);
+    return new Blob([out],{type:'audio/wav'});
+  }
+  for(const mode of ['voice','piano'])$('demo-'+mode).addEventListener('click',()=>{
     if(state.busy)return;
-    try{
-      setMode(mode);setStatus('デモ音声を読み込んでいます…');
-      const response=await fetch('./samples/'+(mode==='voice'?'demo_melody.wav':'demo_piano.wav'));
-      if(!response.ok)throw new Error('デモ音声を読み込めませんでした。');
-      sourceFile(await response.blob(),mode==='voice'?'メロディデモ.wav':'ピアノデモ.wav');
-    }catch(err){setStatus(err.message||'デモ音声を読み込めませんでした。',true);}
+    setMode(mode);
+    sourceFile(makeDemoWav(mode),mode==='voice'?'歌声デモ.wav':'ピアノデモ.wav');
   });
   async function loadAudio(blob){
     const array=await blob.arrayBuffer();
